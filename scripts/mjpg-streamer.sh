@@ -29,16 +29,6 @@ function install_mjpg-streamer() {
 
   status_msg "Initializing MJPG-Streamer installation ..."
 
-  ### check and install dependencies if missing
-  local dep=(git cmake build-essential imagemagick libv4l-dev ffmpeg)
-  if apt-cache search libjpeg62-turbo-dev | grep -Eq "^libjpeg62-turbo-dev "; then
-    dep+=(libjpeg62-turbo-dev)
-  elif apt-cache search libjpeg8-dev | grep -Eq "^libjpeg8-dev "; then
-    dep+=(libjpeg8-dev)
-  fi
-
-  dependency_check "${dep[@]}"
-
   ### step 1: clone mjpg-streamer
   status_msg "Cloning MJPG-Streamer from ${repo} ..."
   [[ -d "${HOME}/mjpg-streamer" ]] && rm -rf "${HOME}/mjpg-streamer"

@@ -322,8 +322,8 @@ function fetch_webui_ports() {
 
   ### read ports from possible installed interfaces and write them to ~/.kiauh.ini
   for interface in "${interfaces[@]}"; do
-    if [[ -f "/etc/nginx/sites-available/${interface}" ]]; then
-      port=$(grep -E "listen" "/etc/nginx/sites-available/${interface}" | head -1 | sed 's/^\s*//' | sed 's/;$//' | cut -d" " -f2)
+    if [[ -f "${NGINX_BASEDIR}/sites-available/${interface}" ]]; then
+      port=$(grep -E "listen" "${NGINX_BASEDIR}/sites-available/${interface}" | head -1 | sed 's/^\s*//' | sed 's/;$//' | cut -d" " -f2)
       if ! grep -Eq "${interface}_port" "${INI_FILE}"; then
         sed -i '$a'"${interface}_port=${port}" "${INI_FILE}"
       else
@@ -361,78 +361,23 @@ function create_required_folders() {
 }
 
 function update_system_package_lists() {
-  local cache_mtime update_age update_interval silent
-  
-  if [[ $1 == '--silent' ]]; then silent="true"; fi
-  
-  if [[ -e /var/lib/apt/periodic/update-success-stamp ]]; then
-    cache_mtime="$(stat -c %Y /var/lib/apt/periodic/update-success-stamp)"
-  elif [[ -e /var/lib/apt/lists ]]; then
-    cache_mtime="$(stat -c %Y /var/lib/apt/lists)"
-  else
-    log_warning "Failure determining package cache age, forcing update"
-    cache_mtime=0
-  fi
-
-  update_age="$(($(date +'%s') - cache_mtime))"
-  update_interval=$((48*60*60)) # 48hrs
-
-  # update if cache is greater than update_interval
-  if (( update_age > update_interval )); then
-    if [[ ! ${silent} == "true" ]]; then status_msg "Updating package lists..."; fi
-    if ! sudo apt-get update --allow-releaseinfo-change &>/dev/null; then
-      log_error "Failure while updating package lists!"
-      if [[ ! ${silent} == "true" ]]; then error_msg "Updating package lists failed!"; fi
-      return 1
-    else
-      log_info "Package lists updated successfully"
-      if [[ ! ${silent} == "true" ]]; then status_msg "Updated package lists."; fi
-    fi
-  else
-    log_info "Package lists updated recently, skipping update..."
-  fi
+  log_info "Hey, I'm not updating the system package list cuz I'm in arch"
 }
 
 function check_system_updates() {
-  local updates_avail status
-  if ! update_system_package_lists --silent; then
-    status="${red}Update check failed!     ${white}" 
-  else
-    updates_avail="$(apt list --upgradeable 2>/dev/null | sed "1d")"
-    
-    if [[ -n ${updates_avail} ]]; then
-      status="${yellow}System upgrade available!${white}"
-      # add system to application_updates_available in kiauh.ini
-      add_to_application_updates "system"
-    else
-      status="${green}System up to date!       ${white}"
-    fi
-  fi
-  
+  status="${green}System probably up to date, but it doesnt matter!       ${white}"
   echo "${status}"
 }
 
 function upgrade_system_packages() {
-  status_msg "Upgrading System ..."
-  update_system_package_lists
-  if sudo apt-get upgrade -y; then
-    print_confirm "Upgrade complete! Check the log above!\n ${yellow}KIAUH will not install any dist-upgrades or\n any packages which have been held back!${green}"
-  else
-    print_error "System upgrade failed! Please look for any errors printed above!"
-  fi
+  status_msg "Not upgrading anything, do it yourself with pacman"
 }
 
 function install_system_packages() {
   local log_name="$1"
   local packages=("${!2}")
   status_msg "Installing packages..."
-  if sudo apt-get install -y "${packages[@]}"; then
-    ok_msg "${log_name^} packages installed!"
-  else
-    log_error "Failure while installing ${log_name,,} packages"
-    error_msg "Installing ${log_name} packages failed!"
-    exit 1 # exit kiauh
-  fi
+  status_msg "Hey, ptss. Install package '${packages[@]}' with pacman"
 }
 
 function check_usergroups() {

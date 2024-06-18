@@ -61,9 +61,10 @@ function set_globals() {
   PGC_REPO="https://github.com/Kragrathea/pgcode"
 
   #================== NGINX =====================#
-  NGINX_SA="/etc/nginx/sites-available"
-  NGINX_SE="/etc/nginx/sites-enabled"
-  NGINX_CONFD="/etc/nginx/conf.d"
+  NGINX_SA="/home/roberto/homelab/klipper/nginx/data/sites-available"
+  NGINX_SE="/home/roberto/homelab/klipper/nginx/data/sites-enabled"
+  NGINX_CONFD="/home/roberto/homelab/klipper/nginx/data/nginx/conf.d"
+  NGINX_BASEDIR="/home/roberto/homelab/klipper/nginx/data/nginx"
 
   #=============== MOONRAKER-OBICO ================#
   MOONRAKER_OBICO_DIR="${HOME}/moonraker-obico"

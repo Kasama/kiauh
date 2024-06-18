@@ -18,18 +18,9 @@ set -e
 function remove_nginx() {
   if [[ $(dpkg -s nginx  2>/dev/null | grep "Status") = *\ installed ]]; then
     status_msg "Stopping NGINX service ..."
-    if systemctl is-active nginx -q; then
-      sudo systemctl stop nginx && ok_msg "Service stopped!"
-    else
-      warn_msg "NGINX service not active!"
-    fi
 
     status_msg "Removing NGINX from system ..."
-    if sudo apt-get remove nginx -y && sudo update-rc.d -f nginx remove; then
-      ok_msg "NGINX removed!"
-    else
-      error_msg "Removing NGINX from system failed!"
-    fi
+    ok_msg "Just do that yourself, this doesn't work on arch"
   else
     print_error "Looks like Nginx was already removed!\n Skipping..."
   fi
@@ -104,14 +95,14 @@ function match_nginx_configs() {
   local require_service_restart="false"
   local upstreams="${NGINX_CONFD}/upstreams.conf"
   local common_vars="${NGINX_CONFD}/common_vars.conf"
-  local mainsail_nginx_cfg="/etc/nginx/sites-available/mainsail"
-  local fluidd_nginx_cfg="/etc/nginx/sites-available/fluidd"
+  local mainsail_nginx_cfg="${NGINX_BASEDIR}/sites-available/mainsail"
+  local fluidd_nginx_cfg="${NGINX_BASEDIR}/sites-available/fluidd"
   local upstreams_webcams
   local mainsail_webcams
   local fluidd_webcams
 
   ### reinstall nginx configs if the amount of upstreams don't match anymore
-  upstreams_webcams=$(grep -Ec "mjpgstreamer" "/etc/nginx/conf.d/upstreams.conf")
+  upstreams_webcams=$(grep -Ec "mjpgstreamer" "${NGINX_BASEDIR}/conf.d/upstreams.conf")
   mainsail_webcams=$(grep -Ec "mjpgstreamer" "${mainsail_nginx_cfg}" 2>/dev/null || echo "0")
   fluidd_webcams=$(grep -Ec "mjpgstreamer" "${fluidd_nginx_cfg}" 2>/dev/null || echo "0")
 
@@ -157,7 +148,7 @@ function match_nginx_configs() {
 
   ### only restart nginx if configs were updated
   if [[ ${require_service_restart} == "true" ]]; then
-    sudo systemctl restart nginx.service
+    warn_msg "You should probably restart nginx yourself"
   fi
 
   ok_msg "Done!"
@@ -171,25 +162,18 @@ function remove_conflicting_packages() {
 
   if [[ ${apache} == "true" ]]; then
     status_msg "Removing Apache2 from system ..."
-    if sudo apt-get remove apache2 -y && sudo update-rc.d -f apache2 remove; then
-      ok_msg "Apache2 removed!"
-    else
-      error_msg "Removing Apache2 from system failed!"
-    fi
+    ok_msg "Just remove apache2 with pacman mate"
   fi
 
   if [[ ${haproxy} == "true" ]]; then
     status_msg "Removing haproxy from system ..."
-    if sudo apt-get remove haproxy -y && sudo update-rc.d -f haproxy remove; then
-      ok_msg "Haproxy removed!"
-    else
-      error_msg "Removing Haproxy from system failed!"
-    fi
+    ok_msg "Just remove haproxy with pacman mate"
   fi
 }
 
 function disable_conflicting_packages() {
   local apache=${1} haproxy=${2}
+  return
 
   if [[ ${apache} == "true" ]]; then
     status_msg "Stopping Apache2 service ..."
@@ -226,11 +210,12 @@ function disable_conflicting_packages() {
 
 function detect_conflicting_packages() {
   local apache="false" haproxy="false"
+  return
 
-  ### check system for an installed apache2 service
-  [[ $(dpkg -s apache2  2>/dev/null | grep "Status") = *\ installed ]] && apache="true"
-  ### check system for an installed haproxy service
-  [[ $(dpkg -s haproxy  2>/dev/null | grep "Status") = *\ installed ]] && haproxy="true"
+  # ### check system for an installed apache2 service
+  # [[ $(dpkg -s apache2  2>/dev/null | grep "Status") = *\ installed ]] && apache="true"
+  # ### check system for an installed haproxy service
+  # [[ $(dpkg -s haproxy  2>/dev/null | grep "Status") = *\ installed ]] && haproxy="true"
 
   #notify user about haproxy or apache2 services found and possible issues
   if [[ ${haproxy} == "false" && ${apache} == "false" ]]; then
@@ -283,7 +268,7 @@ function set_nginx_cfg() {
     dependency_check "${dep[@]}"
 
     local cfg_src="${RESOURCES}/${interface}"
-    local cfg_dest="/etc/nginx/sites-available/${interface}"
+    local cfg_dest="${NGINX_BASEDIR}/sites-available/${interface}"
 
     status_msg "Creating NGINX configuration for ${interface^} ..."
 
@@ -298,13 +283,13 @@ function set_nginx_cfg() {
     fi
 
     #remove nginx default config
-    if [[ -e "/etc/nginx/sites-enabled/default" ]]; then
-      sudo rm "/etc/nginx/sites-enabled/default"
+    if [[ -e "${NGINX_BASEDIR}/sites-enabled/default" ]]; then
+      sudo rm "${NGINX_BASEDIR}/sites-enabled/default"
     fi
 
     #create symlink for own sites
-    if [[ ! -e "/etc/nginx/sites-enabled/${interface}" ]]; then
-      sudo ln -s "/etc/nginx/sites-available/${interface}" "/etc/nginx/sites-enabled/"
+    if [[ ! -e "${NGINX_BASEDIR}/sites-enabled/${interface}" ]]; then
+      sudo ln -s "${NGINX_BASEDIR}/sites-available/${interface}" "${NGINX_BASEDIR}/sites-enabled/"
     fi
 
     if [[ -n ${SET_LISTEN_PORT} ]]; then
@@ -313,7 +298,7 @@ function set_nginx_cfg() {
       ok_msg "${interface^} configured for default port ${DEFAULT_PORT}!"
     fi
 
-    sudo systemctl restart nginx.service
+    warn_msg "You should probably restart NGINX"
 
     ok_msg "NGINX configuration for ${interface^} was set!"
   fi
@@ -341,18 +326,18 @@ function set_nginx_permissions() {
 
 function read_listen_port() {
   local port interface=${1}
-  port=$(grep listen "/etc/nginx/sites-enabled/${interface}" | head -1 | sed 's/^\s*//' | cut -d" " -f2 | cut -d";" -f1)
+  port=$(grep listen "${NGINX_BASEDIR}/sites-enabled/${interface}" | head -1 | sed 's/^\s*//' | cut -d" " -f2 | cut -d";" -f1)
   echo "${port}"
 }
 
 function detect_enabled_sites() {
   MAINSAIL_ENABLED="false" FLUIDD_ENABLED="false"
   #check if there is another UI config already installed and reads the port they are listening on
-  if [[ -e "/etc/nginx/sites-enabled/mainsail" ]]; then
+  if [[ -e "${NGINX_BASEDIR}/sites-enabled/mainsail" ]]; then
     SITE_ENABLED="true" && MAINSAIL_ENABLED="true"
     MAINSAIL_PORT=$(read_listen_port "mainsail")
   fi
-  if [[ -e "/etc/nginx/sites-enabled/fluidd" ]]; then
+  if [[ -e "${NGINX_BASEDIR}/sites-enabled/fluidd" ]]; then
     SITE_ENABLED="true" && FLUIDD_ENABLED="true"
     FLUIDD_PORT=$(read_listen_port "fluidd")
 

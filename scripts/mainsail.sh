@@ -213,13 +213,13 @@ function remove_mainsail_dir() {
 }
 
 function remove_mainsail_nginx_config() {
-  if [[ -e "/etc/nginx/sites-available/mainsail" ]]; then
+  if [[ -e "${NGINX_BASEDIR}/sites-available/mainsail" ]]; then
     status_msg "Removing Mainsail configuration for Nginx ..."
-    sudo rm "/etc/nginx/sites-available/mainsail" && ok_msg "File removed!"
+    sudo rm "${NGINX_BASEDIR}/sites-available/mainsail" && ok_msg "File removed!"
   fi
-  if [[ -L "/etc/nginx/sites-enabled/mainsail" ]]; then
+  if [[ -L "${NGINX_BASEDIR}/sites-enabled/mainsail" ]]; then
     status_msg "Removing Mainsail Symlink for Nginx ..."
-    sudo rm "/etc/nginx/sites-enabled/mainsail" && ok_msg "File removed!"
+    sudo rm "${NGINX_BASEDIR}/sites-enabled/mainsail" && ok_msg "File removed!"
   fi
 }
 

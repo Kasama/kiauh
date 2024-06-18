@@ -17,8 +17,8 @@ set -e
 
 function install_pgc_for_klipper() {
   local pgconfsrc="${PGC_DIR}/pgcode.local.conf"
-  local pgconf="/etc/nginx/sites-available/pgcode.local.conf"
-  local pgconfsl="/etc/nginx/sites-enabled/pgcode.local.conf"
+  local pgconf="${NGINX_BASEDIR}/sites-available/pgcode.local.conf"
+  local pgconfsl="${NGINX_BASEDIR}/sites-enabled/pgcode.local.conf"
   local pgc_uri pgc_custom_port pgc_default_port="7136"
 
   status_msg "Installing PrettyGCode for Klipper ..."
@@ -59,8 +59,8 @@ function install_pgc_for_klipper() {
 #=================================================#
 
 function remove_prettygcode() {
-  local pgconf="/etc/nginx/sites-available/pgcode.local.conf"
-  local pgconfsl="/etc/nginx/sites-enabled/pgcode.local.conf"
+  local pgconf="${NGINX_BASEDIR}/sites-available/pgcode.local.conf"
+  local pgconfsl="${NGINX_BASEDIR}/sites-enabled/pgcode.local.conf"
 
   if [[ -d ${PGC_DIR} || -f ${pgconf} || -L ${pgconfsl} ]]; then
     status_msg "Removing PrettyGCode for Klipper ..."

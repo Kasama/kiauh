@@ -206,13 +206,13 @@ function remove_fluidd_dir() {
 }
 
 function remove_fluidd_nginx_config() {
-  if [[ -e "/etc/nginx/sites-available/fluidd" ]]; then
+  if [[ -e "${NGINX_BASEDIR}/sites-available/fluidd" ]]; then
     status_msg "Removing Fluidd configuration for Nginx ..."
-    sudo rm "/etc/nginx/sites-available/fluidd" && ok_msg "File removed!"
+    sudo rm "${NGINX_BASEDIR}/sites-available/fluidd" && ok_msg "File removed!"
   fi
-  if [[ -L "/etc/nginx/sites-enabled/fluidd" ]]; then
+  if [[ -L "${NGINX_BASEDIR}/sites-enabled/fluidd" ]]; then
     status_msg "Removing Fluidd Symlink for Nginx ..."
-    sudo rm "/etc/nginx/sites-enabled/fluidd" && ok_msg "File removed!"
+    sudo rm "${NGINX_BASEDIR}/sites-enabled/fluidd" && ok_msg "File removed!"
   fi
 }
 
